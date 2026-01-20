@@ -771,7 +771,8 @@ div[data-testid="stVerticalBlockBorderWrapper"] {
 button[kind="primary"] {
   border-radius: 12px !important;
 }
-header, footer { visibility: hidden; height: 0px; }
+footer { visibility: hidden; height: 0px; }
+header[data-testid="stHeader"] { background: transparent; }
 </style>
         """,
         unsafe_allow_html=True,
