@@ -1,57 +1,118 @@
-# Fluids Flow Lab (Streamlit)
+# Fluids Flow Lab
 
-Interactive Streamlit app for visualizing **continuity** and **Bernoulli’s principle** in an idealized pipe flow. The simulation shows tracer “water” particles accelerating through a constriction and provides an in-pipe hover/touch probe for local speed and pressure.
+Fluids Flow Lab is an interactive Streamlit teaching app for exploring mass
+continuity and Bernoulli's principle in an idealized pipe. It animates tracer
+particles through a variable-diameter, sloped pipe; provides a local
+speed/pressure probe; and lets learners record and export experimental trials.
 
-## Features
+**Status:** Complete for the documented educational scope. The physics and
+primary Streamlit workflow are covered by automated tests.
 
-- Real-time 2D pipe flow visualization (self-contained HTML canvas)
-- Continuity-driven velocity changes with pipe diameter
-- Bernoulli + elevation effects in the local pressure estimate
-- Data logging table with professional headers (units included) + CSV export
-- Explanation tab suitable for lab reports / classroom use
+## Capabilities
 
-## Run Locally
+- Adjust flow rate, density, gravity, three pipe diameters, and endpoint heights.
+- Visualize continuity-driven velocity changes with animated dots or streaks.
+- Probe local diameter, speed, and ideal Bernoulli pressure by mouse or touch.
+- Record configurations with calculated velocities, pressures, mass flow, and
+  continuity residuals.
+- Export recorded trials as UTF-8 CSV.
+- Review the model equations, usage guidance, limitations, and safety notes in
+  the app.
 
-### 1) Install dependencies
+## Architecture and stack
+
+The project intentionally remains a small single-page app:
+
+- `app.py` contains the tested physics functions, Streamlit controls and data
+  log, and a self-contained HTML canvas animation.
+- Python calculates the section values shown in the data log.
+- The embedded canvas applies the same continuity and Bernoulli relationships
+  continuously along the visualized pipe.
+- Streamlit session state stores trials for the current browser session.
+
+Runtime: Python 3.13, Streamlit 1.52.1, and pandas 2.3.3.
+
+## Prerequisites
+
+- Python 3.13
+- `pip`
+
+No environment variables, credentials, database, or external API are required.
+
+## Install and run
 
 ```bash
-python3 -m venv .venv
+python3.13 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 2) Start the app
-
-```bash
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Streamlit will print a local URL (typically `http://localhost:8501`).
+Streamlit prints the local URL, normally
+[`http://localhost:8501`](http://localhost:8501).
+
+## Verification
+
+From the repository root, with dependencies installed:
+
+```bash
+./scripts/verify.sh
+```
+
+This command compiles the Python source and runs seven automated checks covering:
+
+- area, velocity, mass-flow, pressure, and continuity calculations;
+- constriction and elevation behavior;
+- stationary flow and invalid input handling;
+- initial Streamlit rendering; and
+- recording a trial in the data log.
 
 ## Deploy on Streamlit Community Cloud
 
-### 1) Push these files to GitHub
+1. Open [Streamlit Community Cloud](https://streamlit.io/cloud) and sign in
+   with GitHub.
+2. Create an app from
+   [`ViraatC22/Fluids-Demo`](https://github.com/ViraatC22/Fluids-Demo).
+3. Select branch `main` and entry point `app.py`.
+4. Deploy. `runtime.txt` requests Python 3.13 and `requirements.txt` pins the
+   tested direct dependencies.
 
-- `app.py`
-- `requirements.txt`
-- `runtime.txt`
+After pushing an update, reboot the app from **Manage app** if Streamlit Cloud
+does not rebuild it automatically.
 
-### 2) Create the app in Streamlit Cloud
+## Repository structure
 
-1. Go to https://streamlit.io/cloud and sign in with GitHub
-2. Click **New app**
-3. Choose:
-   - Repository: `ViraatC22/Fluids-Demo`
-   - Branch: `main`
-   - Main file path: `app.py`
-4. Click **Deploy**
+```text
+.
+├── app.py                    # Physics, UI, data log, and canvas visualization
+├── requirements.txt          # Pinned direct runtime dependencies
+├── runtime.txt               # Streamlit Cloud Python version
+├── scripts/verify.sh         # Canonical local verification command
+├── tests/test_app.py         # Physics and Streamlit workflow tests
+└── docs/
+    ├── PROJECT_AUDIT.md
+    ├── COMPLETION_PLAN.md
+    └── FINAL_STATUS.md
+```
 
-### 3) If you update code later
+## Troubleshooting
 
-- Push to `main`, then use **Manage app → Reboot app** to rebuild.
+- If `streamlit` is not found, activate `.venv` and reinstall
+  `requirements.txt`.
+- Run commands from the repository root so the test runner can locate `app.py`.
+- The trial log is session-only by design; downloading CSV is the persistence
+  path.
+- Very small diameters and high flow rates can produce low or negative ideal
+  gauge/absolute pressure estimates. The app demonstrates the lossless equation
+  and does not model cavitation or real-system operating limits.
 
-## Project Structure
+## Model, security, and privacy limitations
 
-- `app.py` — Streamlit UI + physics calculations + embedded canvas animation
-- `requirements.txt` — Python dependencies for local + cloud deployment
-- `runtime.txt` — Python version for Streamlit Cloud
+This is an educational ideal-flow model. It omits viscosity, turbulence, minor
+losses, pumps, cavitation, and compressibility, so it must not be used to design
+pressurized hardware. It does not transmit or persist user data outside the
+current Streamlit session unless the user explicitly downloads a CSV.
+
+No license file is currently present; copyright remains with the repository
+owner unless a license is added.
