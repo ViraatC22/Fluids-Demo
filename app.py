@@ -8,7 +8,6 @@ This digital model is an original construction that:
 
 External libraries used:
 - streamlit (web UI)
-- numpy (numeric helpers)
 - pandas (tabular data and CSV export)
 
 If you reuse this code, please cite it appropriately and also
@@ -19,7 +18,6 @@ import math  # for pi and basic math operations
 import time  # for simple animation timing
 from typing import Tuple
 
-import numpy as np  # for convenient numeric helpers
 import pandas as pd  # for tabular data and CSV export
 import streamlit as st  # Streamlit for the interactive web app
 import streamlit.components.v1 as components  # Embed custom 3D HTML/JS
@@ -74,6 +72,27 @@ def compute_flow_and_pressures(
     -------
     A1, A2, v1, v2, m_dot, p2, dp, continuity_residual, Q_m3s
     """
+    values = {
+        "rho": rho,
+        "Q_m3s": Q_m3s,
+        "d1_m": d1_m,
+        "d2_m": d2_m,
+        "p1_pa": p1_pa,
+        "dh_m": dh_m,
+        "g": g,
+    }
+    for name, value in values.items():
+        if not math.isfinite(value):
+            raise ValueError(f"{name} must be finite")
+    if rho <= 0:
+        raise ValueError("rho must be greater than zero")
+    if Q_m3s < 0:
+        raise ValueError("Q_m3s must be non-negative")
+    if d1_m <= 0 or d2_m <= 0:
+        raise ValueError("pipe diameters must be greater than zero")
+    if g < 0:
+        raise ValueError("g must be non-negative")
+
     # Compute cross-sectional areas from diameters
     A1 = circle_area_from_diameter(d1_m)
     A2 = circle_area_from_diameter(d2_m)
@@ -888,28 +907,45 @@ header[data-testid="stHeader"] { background: transparent; }
     d_right_m = d_right_cm / 100.0  # cm → m
     p_left_pa = p1_kPa * 1000.0  # kPa → Pa
 
-    # Cross-sectional areas and velocities from continuity (Q = A v).
-    A_left = circle_area_from_diameter(d_left_m)
-    A_mid = circle_area_from_diameter(d_mid_m)
-    A_right = circle_area_from_diameter(d_right_m)
-
-    v_left = Q_m3_s / A_left
-    v_mid = Q_m3_s / A_mid
-    v_right = Q_m3_s / A_right
-
-    m_dot = rho * Q_m3_s
-
     h_mid_m = (h_left_m + h_right_m) / 2.0
-    p_mid_pa = p_left_pa + 0.5 * rho * (v_left**2 - v_mid**2) + rho * g * (
-        h_left_m - h_mid_m
+    (
+        A_left,
+        A_mid,
+        v_left,
+        v_mid,
+        m_dot,
+        p_mid_pa,
+        _,
+        continuity_residual_left_mid,
+        _,
+    ) = compute_flow_and_pressures(
+        rho=rho,
+        Q_m3s=Q_m3_s,
+        d1_m=d_left_m,
+        d2_m=d_mid_m,
+        p1_pa=p_left_pa,
+        dh_m=h_mid_m - h_left_m,
+        g=g,
     )
-    p_right_pa = p_left_pa + 0.5 * rho * (v_left**2 - v_right**2) + rho * g * (
-        h_left_m - h_right_m
+    (
+        _,
+        A_right,
+        _,
+        v_right,
+        _,
+        p_right_pa,
+        _,
+        continuity_residual_left_right,
+        _,
+    ) = compute_flow_and_pressures(
+        rho=rho,
+        Q_m3s=Q_m3_s,
+        d1_m=d_left_m,
+        d2_m=d_right_m,
+        p1_pa=p_left_pa,
+        dh_m=h_right_m - h_left_m,
+        g=g,
     )
-
-    # Numerical check for mass conservation (should be ~0 in the ideal model).
-    continuity_residual_left_mid = abs(A_left * v_left - A_mid * v_mid)
-    continuity_residual_left_right = abs(A_left * v_left - A_right * v_right)
 
     with st.sidebar.expander("Visualization", expanded=True):
         paused = st.toggle("Pause", value=False)
